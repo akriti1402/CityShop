@@ -1,10 +1,24 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
-import {View, Text, StyleSheet, ImageBackground, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView} from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ImageBackground,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Image,
+} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { createClient } from '@supabase/supabase-js';
 import { CONFIG } from '../utils/config';
 import { AuthContext } from '../context/AuthContext';
+import Icon from 'react-native-vector-icons/MaterialIcons'; // Import Icon library
+import Toast from 'react-native-toast-message'; // Import Toast
 
 const supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
@@ -13,13 +27,15 @@ const ProfileScreen = () => {
   const { user } = route.params || {};
   const [userDetails, setUserDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [editingField, setEditingField] = useState(null);
   const [tempValue, setTempValue] = useState('');
   const navigation = useNavigation();
   const { logout } = useContext(AuthContext);
 
+  // Fetch user details from the `users` table
   const fetchUserDetails = useCallback(async () => {
-    if (!user) {return;}
+    if (!user) return;
 
     setLoading(true);
     const { data, error } = await supabase
@@ -42,14 +58,123 @@ const ProfileScreen = () => {
     }
   }, [user, fetchUserDetails]);
 
+  // Function to get MIME type based on file extension
+  const getMimeType = (fileName) => {
+    const extension = fileName.split('.').pop().toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'bmp':
+        return 'image/bmp';
+      case 'webp':
+        return 'image/webp';
+      case 'svg':
+        return 'image/svg+xml';
+      default:
+        return 'application/octet-stream'; // Fallback MIME type
+    }
+  };
+
+  // Handle image upload
+  const handleImageUpload = async () => {
+    try {
+      const result = await launchImageLibrary({ mediaType: 'photo' });
+
+      if (result.didCancel || !result.assets || result.assets.length === 0) {
+        Alert.alert('No image selected');
+        return;
+      }
+
+      const imageUri = result.assets[0].uri;
+      const imageName = `profile_${user.id}_${Date.now()}.jpg`; // Unique filename
+      const imageType = getMimeType(imageName); // Dynamically detect MIME type
+
+      setUploading(true);
+
+      // Upload image to Supabase storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('profile-pictures')
+        .upload(imageName, { uri: imageUri, type: imageType, name: imageName });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get the public URL of the uploaded image
+      const { data: urlData } = supabase.storage
+        .from('profile-pictures')
+        .getPublicUrl(imageName);
+
+      console.log('Image URL:', urlData.publicUrl);
+
+      // Update user profile with the new image URL
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ profile_photo_url: urlData.publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Update local state with the new image URL
+      setUserDetails((prev) => ({ ...prev, profile_photo_url: urlData.publicUrl }));
+      Toast.show({ type: 'success', text1: 'Profile picture updated successfully!' });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      Toast.show({ type: 'error', text1: 'Failed to upload profile picture.' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Handle deleting profile image
+  const handleDeleteImage = async () => {
+    try {
+      if (!userDetails?.profile_photo_url) return;
+
+      // Extract the image name from the URL
+      const imageUrl = userDetails.profile_photo_url;
+      const imageName = imageUrl.split('/').pop();
+
+      // Delete the image from Supabase Storage
+      const { error: deleteError } = await supabase.storage
+        .from('profile-pictures')
+        .remove([imageName]);
+
+      if (deleteError) throw deleteError;
+
+      // Update the user's profile to remove the image URL
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ profile_photo_url: null })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setUserDetails((prev) => ({ ...prev, profile_photo_url: null }));
+      Toast.show({ type: 'success', text1: 'Profile picture deleted successfully!' });
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      Toast.show({ type: 'error', text1: 'Failed to delete profile picture.' });
+    }
+  };
+
+  // Handle editing user details
   const handleEdit = (field, value) => {
     setEditingField(field);
     setTempValue(value);
   };
 
+  // Handle saving edited user details
   const handleSave = async (field) => {
-    if (!userDetails) {return;}
-
+    if (!userDetails) return;
 
     const updatedDetails = { ...userDetails, [field]: tempValue };
     setUserDetails(updatedDetails);
@@ -60,46 +185,96 @@ const ProfileScreen = () => {
       .eq('id', user.id);
 
     if (error) {
-      Alert.alert('Error', 'Failed to update profile. Please try again.');
+      Toast.show({ type: 'error', text1: 'Failed to update profile.' });
       console.error('Error updating profile:', error);
     } else {
-      Alert.alert('Success', 'Profile updated successfully!');
+      Toast.show({ type: 'success', text1: 'Profile updated successfully!' });
     }
 
     setEditingField(null);
   };
 
+  // Handle logout
   const handleLogout = async () => {
     await logout();
     navigation.replace('Login');
   };
 
-  if (!user) {
+  // Render profile picture and upload/delete buttons
+  const renderProfilePicture = () => {
     return (
-      <ImageBackground
-        source={require('../assets/login-background.png')}
-        style={styles.background}
-        resizeMode="cover"
-      >
-        <LinearGradient
-          colors={['rgba(0, 0, 0, 0.6)', 'rgba(0, 0, 0, 0.8)']}
-          style={styles.overlay}
-        >
-          <View style={styles.content}>
-            <Text style={styles.title}>Profile</Text>
-            <Text style={styles.subtitle}>No user data available</Text>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.button}>
-              <Text style={styles.buttonText}>Go Back</Text>
+      <View style={styles.profilePictureContainer}>
+        {userDetails?.profile_photo_url ? (
+          <Image source={{ uri: userDetails.profile_photo_url }} style={styles.profileImage} />
+        ) : (
+          <Text style={styles.noImageText}>No profile picture</Text>
+        )}
+        <View style={styles.imageActionButtons}>
+          <TouchableOpacity onPress={handleImageUpload} style={styles.uploadButton} disabled={uploading}>
+            <Icon name="edit" size={20} color="#fff" />
+          </TouchableOpacity>
+          {userDetails?.profile_photo_url && (
+            <TouchableOpacity onPress={handleDeleteImage} style={styles.deleteButton}>
+              <Icon name="delete" size={20} color="#fff" />
             </TouchableOpacity>
-          </View>
-        </LinearGradient>
-      </ImageBackground>
+          )}
+        </View>
+      </View>
     );
-  }
+  };
+
+  // Render user details with edit options
+  const renderUserDetails = () => {
+    if (!userDetails) return null;
+
+    const fields = [
+      { label: 'First Name', key: 'first_name' },
+      { label: 'Last Name', key: 'last_name' },
+      { label: 'Email', key: 'email', editable: false }, // Email is not editable
+      { label: 'Phone', key: 'phone' },
+      { label: 'Date of Birth', key: 'dob' },
+      { label: 'Gender', key: 'gender' },
+      { label: 'Country', key: 'country' },
+      { label: 'State', key: 'state' },
+      { label: 'City', key: 'city' },
+    ];
+
+    return (
+      <View style={styles.userDetailsContainer}>
+        {fields.map((field) => (
+          <View key={field.key} style={styles.fieldContainer}>
+            <Text style={styles.label}>{field.label}</Text>
+            {editingField === field.key ? (
+              <View style={styles.editContainer}>
+                <TextInput
+                  value={tempValue}
+                  onChangeText={setTempValue}
+                  style={styles.input}
+                  autoFocus
+                />
+                <TouchableOpacity onPress={() => handleSave(field.key)} style={styles.saveButton}>
+                  <Icon name="save" size={20} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.editContainer}>
+                <Text style={styles.value}>{userDetails[field.key] || 'N/A'}</Text>
+                {field.editable !== false && (
+                  <TouchableOpacity onPress={() => handleEdit(field.key, userDetails[field.key])} style={styles.editButton}>
+                    <Icon name="edit" size={20} color="#fff" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </View>
+        ))}
+      </View>
+    );
+  };
 
   return (
     <ImageBackground
-      source={require('../assets/login-background.png')} // Use the same background image
+      source={require('../assets/login-background.png')}
       style={styles.background}
       resizeMode="cover"
     >
@@ -114,216 +289,11 @@ const ProfileScreen = () => {
               <ActivityIndicator size="large" color="#007bff" />
             ) : (
               <View style={styles.profileInfo}>
-                {/* First Name */}
-                <View style={styles.fieldContainer}>
-                  <Text style={styles.label}>First Name</Text>
-                  {editingField === 'first_name' ? (
-                    <View style={styles.editContainer}>
-                      <TextInput
-                        value={tempValue}
-                        onChangeText={setTempValue}
-                        style={styles.input}
-                        autoFocus
-                      />
-                      <TouchableOpacity onPress={() => handleSave('first_name')} style={styles.saveButton}>
-                        <Text style={styles.saveButtonText}>Save</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <View style={styles.editContainer}>
-                      <Text style={styles.value}>{userDetails?.first_name || 'N/A'}</Text>
-                      <TouchableOpacity onPress={() => handleEdit('first_name', userDetails?.first_name)} style={styles.editButton}>
-                        <Text style={styles.editButtonText}>Edit</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
+                {/* Profile Picture Section */}
+                {renderProfilePicture()}
 
-                {/* Last Name */}
-                <View style={styles.fieldContainer}>
-                  <Text style={styles.label}>Last Name</Text>
-                  {editingField === 'last_name' ? (
-                    <View style={styles.editContainer}>
-                      <TextInput
-                        value={tempValue}
-                        onChangeText={setTempValue}
-                        style={styles.input}
-                        autoFocus
-                      />
-                      <TouchableOpacity onPress={() => handleSave('last_name')} style={styles.saveButton}>
-                        <Text style={styles.saveButtonText}>Save</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <View style={styles.editContainer}>
-                      <Text style={styles.value}>{userDetails?.last_name || 'N/A'}</Text>
-                      <TouchableOpacity onPress={() => handleEdit('last_name', userDetails?.last_name)} style={styles.editButton}>
-                        <Text style={styles.editButtonText}>Edit</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-
-                {/* Email */}
-                <View style={styles.fieldContainer}>
-                  <Text style={styles.label}>Email</Text>
-                  <Text style={styles.value}>{userDetails?.email || 'N/A'}</Text>
-                </View>
-
-                {/* Phone */}
-                <View style={styles.fieldContainer}>
-                  <Text style={styles.label}>Phone</Text>
-                  {editingField === 'phone' ? (
-                    <View style={styles.editContainer}>
-                      <TextInput
-                        value={tempValue}
-                        onChangeText={setTempValue}
-                        style={styles.input}
-                        autoFocus
-                      />
-                      <TouchableOpacity onPress={() => handleSave('phone')} style={styles.saveButton}>
-                        <Text style={styles.saveButtonText}>Save</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <View style={styles.editContainer}>
-                      <Text style={styles.value}>{userDetails?.phone || 'N/A'}</Text>
-                      <TouchableOpacity onPress={() => handleEdit('phone', userDetails?.phone)} style={styles.editButton}>
-                        <Text style={styles.editButtonText}>Edit</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-
-                {/* Date of Birth */}
-                <View style={styles.fieldContainer}>
-                  <Text style={styles.label}>Date of Birth</Text>
-                  {editingField === 'dob' ? (
-                    <View style={styles.editContainer}>
-                      <TextInput
-                        value={tempValue}
-                        onChangeText={setTempValue}
-                        style={styles.input}
-                        autoFocus
-                      />
-                      <TouchableOpacity onPress={() => handleSave('dob')} style={styles.saveButton}>
-                        <Text style={styles.saveButtonText}>Save</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <View style={styles.editContainer}>
-                      <Text style={styles.value}>{userDetails?.dob || 'N/A'}</Text>
-                      <TouchableOpacity onPress={() => handleEdit('dob', userDetails?.dob)} style={styles.editButton}>
-                        <Text style={styles.editButtonText}>Edit</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-
-                {/* Gender */}
-                <View style={styles.fieldContainer}>
-                  <Text style={styles.label}>Gender</Text>
-                  {editingField === 'gender' ? (
-                    <View style={styles.editContainer}>
-                      <TextInput
-                        value={tempValue}
-                        onChangeText={setTempValue}
-                        style={styles.input}
-                        autoFocus
-                      />
-                      <TouchableOpacity onPress={() => handleSave('gender')} style={styles.saveButton}>
-                        <Text style={styles.saveButtonText}>Save</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <View style={styles.editContainer}>
-                      <Text style={styles.value}>{userDetails?.gender || 'N/A'}</Text>
-                      <TouchableOpacity onPress={() => handleEdit('gender', userDetails?.gender)} style={styles.editButton}>
-                        <Text style={styles.editButtonText}>Edit</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-
-                {/* Country */}
-                <View style={styles.fieldContainer}>
-                  <Text style={styles.label}>Country</Text>
-                  {editingField === 'country' ? (
-                    <View style={styles.editContainer}>
-                      <TextInput
-                        value={tempValue}
-                        onChangeText={setTempValue}
-                        style={styles.input}
-                        autoFocus
-                      />
-                      <TouchableOpacity onPress={() => handleSave('country')} style={styles.saveButton}>
-                        <Text style={styles.saveButtonText}>Save</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <View style={styles.editContainer}>
-                      <Text style={styles.value}>{userDetails?.country || 'N/A'}</Text>
-                      <TouchableOpacity onPress={() => handleEdit('country', userDetails?.country)} style={styles.editButton}>
-                        <Text style={styles.editButtonText}>Edit</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-
-                {/* State */}
-                <View style={styles.fieldContainer}>
-                  <Text style={styles.label}>State</Text>
-                  {editingField === 'state' ? (
-                    <View style={styles.editContainer}>
-                      <TextInput
-                        value={tempValue}
-                        onChangeText={setTempValue}
-                        style={styles.input}
-                        autoFocus
-                      />
-                      <TouchableOpacity onPress={() => handleSave('state')} style={styles.saveButton}>
-                        <Text style={styles.saveButtonText}>Save</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <View style={styles.editContainer}>
-                      <Text style={styles.value}>{userDetails?.state || 'N/A'}</Text>
-                      <TouchableOpacity onPress={() => handleEdit('state', userDetails?.state)} style={styles.editButton}>
-                        <Text style={styles.editButtonText}>Edit</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-
-                {/* City */}
-                <View style={styles.fieldContainer}>
-                  <Text style={styles.label}>City</Text>
-                  {editingField === 'city' ? (
-                    <View style={styles.editContainer}>
-                      <TextInput
-                        value={tempValue}
-                        onChangeText={setTempValue}
-                        style={styles.input}
-                        autoFocus
-                      />
-                      <TouchableOpacity onPress={() => handleSave('city')} style={styles.saveButton}>
-                        <Text style={styles.saveButtonText}>Save</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <View style={styles.editContainer}>
-                      <Text style={styles.value}>{userDetails?.city || 'N/A'}</Text>
-                      <TouchableOpacity onPress={() => handleEdit('city', userDetails?.city)} style={styles.editButton}>
-                        <Text style={styles.editButtonText}>Edit</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-
-                {/* Logout Button */}
-                <TouchableOpacity onPress={handleLogout} style={styles.button}>
-                  <Text style={styles.buttonText}>Logout</Text>
-                </TouchableOpacity>
+                {/* User Details Section */}
+                {renderUserDetails()}
               </View>
             )}
           </View>
@@ -355,6 +325,38 @@ const styles = StyleSheet.create({
   },
   profileInfo: {
     width: '100%',
+  },
+  profilePictureContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: 10,
+  },
+  noImageText: {
+    fontSize: 16,
+    color: '#fff',
+    marginBottom: 10,
+  },
+  imageActionButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  uploadButton: {
+    backgroundColor: '#007bff',
+    padding: 10,
+    borderRadius: 20,
+  },
+  deleteButton: {
+    backgroundColor: '#dc3545',
+    padding: 10,
+    borderRadius: 20,
+  },
+  userDetailsContainer: {
+    marginTop: 20,
   },
   fieldContainer: {
     marginBottom: 20,
@@ -390,18 +392,10 @@ const styles = StyleSheet.create({
     padding: 5,
     borderRadius: 5,
   },
-  editButtonText: {
-    color: '#fff',
-    fontSize: 14,
-  },
   saveButton: {
     backgroundColor: '#28a745',
     padding: 5,
     borderRadius: 5,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 14,
   },
   button: {
     width: '100%',

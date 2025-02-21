@@ -1,60 +1,83 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native';
 import Onboarding from 'react-native-onboarding-swiper';
 
+const { width, height } = Dimensions.get('window');
+
 const Dots = ({ selected }) => {
-  let backgroundColor = selected ? '#ff2156' : '#808080';
   return (
-    <View
-      style={{
-        height: 5,
-        width: 5,
-        backgroundColor,
-      }}
-    />
+    <View style={[styles.dot, selected && styles.selectedDot]} />
   );
 };
 
 const Done = (props) => (
-  <TouchableOpacity
-    style={{
-      marginRight: 12,
-    }}
-    {...props}
-  >
-    <Text style={{ color: '#ff2156' }}>Done</Text>
+  <TouchableOpacity style={styles.doneButton} {...props}>
+    <Text style={styles.doneText}>Done</Text>
   </TouchableOpacity>
 );
 
 const OnboardingScreen = ({ navigation }) => {
   return (
     <Onboarding
-      onSkip={() => navigation.navigate('Home')}
-      onDone={() => navigation.navigate('Home')}
+      onSkip={() => navigation.navigate('RoleSelection')}
+      onDone={() => navigation.navigate('RoleSelection')}
       DoneButtonComponent={Done}
-      bottomBarColor="#ffffff"
+      DotComponent={Dots}
+      bottomBarColor="transparent"
+      containerStyles={styles.container}
+      imageContainerStyles={styles.imageContainer}
       pages={[
         {
-          backgroundColor: '#fff',
-          image: <Image source={require('../assets/Preview.png')} />,
-          title: 'Welcome to the City Shop',
-          subtitle: 'Experience shopping tailored to your neighborhood.',
+          backgroundColor: 'rgb(160,184,138)',
+          image: <Image source={require('../assets/OnboardingFirst.png')} style={styles.backgroundImage} />,
         },
         {
-          backgroundColor: '#fff',
-          image: <Image source={require('../assets/CityShop.png')} />,
-          title: 'Shopkeeper Facilities',
-          subtitle: 'Bring your shop online and reach a wider audience today.',
+          backgroundColor: 'rgb(160,184,138)',
+          image: <Image source={require('../assets/OnboardingSecond.png')} style={styles.backgroundImage} />,
         },
         {
-          backgroundColor: '#fff',
-          image: <Image source={require('../assets/CityShopSecond.png')} />,
-          title: 'Shopkeeper Facilities',
-          subtitle: 'Bring your shop online and reach a wider audience today.',
+          backgroundColor: 'rgb(160,184,138)',
+          image: <Image source={require('../assets/OnboardingThird.png')} style={styles.backgroundImage} />,
         },
       ]}
     />
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  imageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backgroundImage: {
+    width: width,  
+    height: height * 0.85, // Keeps some space for navigation buttons
+    resizeMode: 'contain', // Prevents text inside the image from getting cut
+  },
+  dot: {
+    height: 8,
+    width: 8,
+    borderRadius: 3,
+    marginHorizontal: 3,
+    backgroundColor: '#D3D3D3',
+  },
+  selectedDot: {
+    backgroundColor: '#272953',
+    width: 8,
+    height: 8,
+  },
+  doneButton: {
+    marginRight: 16,
+  },
+  doneText: {
+    color: '#ff2156',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
 
 export default OnboardingScreen;

@@ -61,7 +61,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
   return (
     <ImageBackground
-      source={require('../assets/login-background.png')}
+      source={require('../assets/loginsignupbackground.jpg')}
       style={styles.background}
       resizeMode="cover"
     >
