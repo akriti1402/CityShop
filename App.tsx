@@ -2,15 +2,18 @@ import 'react-native-url-polyfill/auto';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import AppNavigatorShopkeeper from './src/navigation/AppNagivatorShopkeeper';
 import RoleSelectionScreen from './src/navigation/RoleSelectionScreen';
+
 import LoginScreen from './src/components/LoginScreen';
 import SignUpScreen from './src/components/SignUpScreen';
 import ForgotPasswordScreen from './src/screens/ForgetPasswordScreen';
 import ShopkeeperLogin from './src/components/ShopkeeperLogin';
 import ShopKeeperSignUpScreen from './src/components/ShopkeeperSignUp';
+
 import ProfileScreen from './src/screens/ProfileScreen';
 import ShopkeeperProfile from './src/screens/ShopkeeperProfile';
 import ShopkeeperDashboardScreen from './src/screens/ShopkeeperDashboardScreen';
@@ -19,6 +22,7 @@ import ProductDetail from './src/screens/ProductDetail';
 import WishlistScreen from './src/screens/WishlistScreen';
 import Settings from './src/screens/Settings';
 import Notifications from './src/screens/Notifications';
+import Payment from './src/screens/Payment';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 
 const Stack = createStackNavigator();
@@ -28,7 +32,7 @@ const App = () => {
     <AuthProvider>
       <NavigationContainer>
         <Stack.Navigator initialRouteName="Onboarding">
-        <Stack.Screen 
+          <Stack.Screen 
             name="Onboarding" 
             component={OnboardingScreen} 
             options={{ headerShown: false }} 
@@ -112,6 +116,11 @@ const App = () => {
             name="ShopkeeperProductList" 
             component={ShopkeeperProductList} 
             options={{ headerShown: true, title: 'Product Details' }} 
+          />
+          <Stack.Screen 
+            name="Payment" 
+            component={Payment} 
+            options={{ headerShown: true, title: 'Payment' }}
           />
         </Stack.Navigator>
       </NavigationContainer>

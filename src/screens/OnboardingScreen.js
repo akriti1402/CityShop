@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   doneText: {
-    color: '#ff2156',
+    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
