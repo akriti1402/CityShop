@@ -17,7 +17,7 @@ const AppNavigatorShopkeeper = () => {
     setTimeout(() => {
       setLoading(false);
       navigation.navigate(route);
-    }, 1500); // Simulate loading time
+    }, 1500);  // Simulate loading time
   };
 
   return (
@@ -114,3 +114,4 @@ const styles = StyleSheet.create({
 });
 
 export default AppNavigatorShopkeeper;
+
