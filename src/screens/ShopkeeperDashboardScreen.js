@@ -10,7 +10,7 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker'; // Import Picker
+import { Picker } from '@react-native-picker/picker';  // Import Picker
 import { useNavigation } from '@react-navigation/native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { createClient } from '@supabase/supabase-js';
@@ -436,5 +436,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
 
 export default ShopkeeperDashboardScreen;
