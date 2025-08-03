@@ -1,4 +1,4 @@
-/* eslint-disable react/no-unstable-nested-components */
+ /* eslint-disable react/no-unstable-nested-components */
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/HomeScreen';
@@ -42,5 +42,6 @@ const AppNavigator = () => {
     </Tab.Navigator>
   );
 };
+
 
 export default AppNavigator;
