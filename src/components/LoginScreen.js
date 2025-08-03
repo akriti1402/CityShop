@@ -131,7 +131,7 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <ImageBackground
-      source={require('../assets/loginsignupbackground.jpg')} // Replace with your background image
+      source={require('../assets/loginsignupbackground.jpg')} 
       style={styles.background}
       resizeMode="cover"
     >
@@ -365,5 +365,6 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
 });
+
 
 export default LoginScreen;
