@@ -7,7 +7,6 @@ import { CONFIG } from '../utils/config';
 import LinearGradient from 'react-native-linear-gradient'; // Import LinearGradient
 
 const supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-
 const ProductDetail = ({ route }) => {
   const { product } = route.params;
   const { user } = useContext(AuthContext); // Get user from AuthContext
@@ -191,5 +190,6 @@ const styles = StyleSheet.create({
     padding: 10,
   },
 });
+
 
 export default ProductDetail;
