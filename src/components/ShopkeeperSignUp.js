@@ -38,7 +38,7 @@ const ShopkeeperSignUp = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false); // State for date picker visibility
+  const [showDatePicker, setShowDatePicker] = useState(false);   // State for date picker visibility
   const navigation = useNavigation();
 
   // Animation value for button press
@@ -502,5 +502,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
 
 export default ShopkeeperSignUp;
