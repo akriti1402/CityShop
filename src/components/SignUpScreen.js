@@ -19,6 +19,7 @@ import { CONFIG } from '../utils/config';
 
 const supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
+
 const SignUpScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -456,5 +457,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+
 
 export default SignUpScreen;
