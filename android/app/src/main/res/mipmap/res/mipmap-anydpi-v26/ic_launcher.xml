@@ -3,3 +3,4 @@
   <background android:drawable="@mipmap/ic_launcher_adaptive_back"/>
   <foreground android:drawable="@mipmap/ic_launcher_adaptive_fore"/>
 </adaptive-icon>
+
