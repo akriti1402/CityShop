@@ -5,3 +5,7 @@ module.exports = {
     'react-native-reanimated/plugin', // This must be at the END
   ],
 };
+
+
+
+
