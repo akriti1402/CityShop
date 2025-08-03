@@ -19,6 +19,7 @@ import LinearGradient from 'react-native-linear-gradient';
 
 const supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
+
 const ShopkeeperLogin = () => {
   const { login } = useContext(AuthContext);
   const [emailPrefix, setEmailPrefix] = useState('');
@@ -288,5 +289,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
 
 export default ShopkeeperLogin;
