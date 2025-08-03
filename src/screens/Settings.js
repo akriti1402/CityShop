@@ -7,7 +7,6 @@ import { CONFIG } from '../utils/config';
 import LinearGradient from 'react-native-linear-gradient'; // Import LinearGradient
 
 const supabase = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-
 const Settings = ({ navigation }) => {
   const { user } = useContext(AuthContext);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -194,5 +193,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
+
 
 export default Settings;
