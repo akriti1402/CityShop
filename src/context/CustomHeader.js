@@ -14,6 +14,7 @@ const CustomHeader = ({ navigation, onSearch }) => {
     }
   };
 
+  
   const animateSearchBar = () => {
     Animated.sequence([
       Animated.timing(searchBarScale, {
@@ -152,5 +153,6 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
 });
+
 
 export default CustomHeader;
