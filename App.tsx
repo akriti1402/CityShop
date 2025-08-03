@@ -2,7 +2,6 @@ import 'react-native-url-polyfill/auto';
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import AppNavigatorShopkeeper from './src/navigation/AppNagivatorShopkeeper';
@@ -129,3 +128,4 @@ const App = () => {
 };
 
 export default App;
+
